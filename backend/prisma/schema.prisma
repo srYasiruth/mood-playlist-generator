@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum PlaylistInputType {
+  MANUAL
+  JOURNAL
+}
+
+enum MusicApiSource {
+  SPOTIFY
+  YOUTUBE
+  UNKNOWN
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  role             UserRole          @default(USER)
+  favoriteMoods    FavoriteMood[]
+  playlistHistory  PlaylistHistory[]
+  sharedPlaylists  SharedPlaylist[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Mood {
+  id              String            @id @default(cuid())
+  name            String            @unique
+  description     String?
+  keywords        String[]
+  genres          String[]
+  theme           Json?
+  favoriteMoods   FavoriteMood[]
+  playlistHistory PlaylistHistory[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model FavoriteMood {
+  id        String   @id @default(cuid())
+  userId    String
+  moodId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mood      Mood     @relation(fields: [moodId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, moodId])
+  @@index([moodId])
+}
+
+model PlaylistHistory {
+  id               String            @id @default(cuid())
+  userId           String?
+  moodId           String?
+  moodName         String
+  inputType        PlaylistInputType
+  journalTextSaved String?
+  searchQuery      String
+  apiSource        MusicApiSource    @default(UNKNOWN)
+  resultData       Json?
+  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  mood             Mood?             @relation(fields: [moodId], references: [id], onDelete: SetNull)
+  sharedPlaylists  SharedPlaylist[]
+  createdAt        DateTime          @default(now())
+
+  @@index([userId])
+  @@index([moodId])
+}
+
+model SharedPlaylist {
+  id                String          @id @default(cuid())
+  shareId           String          @unique
+  userId            String
+  playlistHistoryId String
+  isActive          Boolean         @default(true)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playlistHistory   PlaylistHistory @relation(fields: [playlistHistoryId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  expiresAt         DateTime?
+
+  @@index([userId])
+  @@index([playlistHistoryId])
+}
+
+model ApiLog {
+  id           String   @id @default(cuid())
+  provider     String
+  endpoint     String
+  statusCode   Int?
+  success      Boolean
+  errorMessage String?
+  createdAt    DateTime @default(now())
+}
+
