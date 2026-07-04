@@ -1,33 +1,36 @@
 # Mood-Based Playlist Generator
 
-A full-stack web application for recommending playlists based on a user's mood. The current version includes a polished mood-first frontend, backend playlist generation with Spotify/demo fallback behavior, authenticated user features backed by PostgreSQL and Prisma, and local rule-based journal mood detection.
+A full-stack web application that recommends playlists based on a user's mood. The current version includes a polished mood-first frontend, backend playlist generation with Spotify/demo fallback behavior, PostgreSQL-backed authentication features, local rule-based journal mood detection, shareable playlist links, and dashboard analytics.
 
-## Current Phase
+## Repository Status
 
-Phase 6 - Sharing and Dashboard Analytics
+Current phase: **Phase 6 - Sharing and Dashboard Analytics completed**
 
-Implemented so far:
+Latest pushed commit at the time of this README update:
+
+```text
+96f05c8 feat: add sharing and dashboard analytics
+```
+
+GitHub repository: [srYasiruth/mood-playlist-generator](https://github.com/srYasiruth/mood-playlist-generator)
+
+## Implemented Features
 
 - React/Vite frontend with mood selection, dynamic themes, playlist results, loading/error/empty states, and responsive layouts
-- Express/TypeScript backend with health, mood, and playlist generation endpoints
+- Express/TypeScript backend with health, mood, auth, playlist, sharing, and dashboard endpoints
 - Spotify Client Credentials integration on the backend only, with safe fallback playlists when Spotify is missing or unavailable
 - PostgreSQL schema managed by Prisma
 - JWT Bearer authentication for register, login, logout, and current-user lookup
 - Password hashing with bcryptjs
 - Favorite moods for authenticated users
 - Playlist generation history for authenticated users
-- Guest playlist generation preserved exactly as before
+- Guest playlist generation preserved
 - Rule-based journal mood detection for the 10 supported moods
 - Journal detection result UI with confidence, reason, matched signals, and generate action
 - Text-based playlist generations saved with `inputType: "text"` for authenticated users
 - Authenticated shareable playlist links
 - Public shared playlist pages that hide private account data
-- Dashboard analytics for generation totals, favorite moods, recent history, and active shares
-- Authenticated shareable playlist links
-- Public shared playlist pages that hide private account data
-- Dashboard analytics for generation totals, favorite moods, recent history, and active shares
-
-Not implemented yet: external/AI sentiment analysis, Spotify user OAuth, saving playlists to a user's Spotify account, advanced dashboard analytics, or deployment.
+- Dashboard analytics for generation totals, favorite moods, recent history, mood counts, and active shares
 
 ## Tech Stack
 
@@ -66,7 +69,7 @@ VITE_API_BASE_URL=http://localhost:5000
 
 ### Backend
 
-`backend/.env` needs database, auth, and optional Spotify values:
+`backend/.env` needs database, auth, frontend URL, and optional Spotify values:
 
 ```env
 PORT=5000
@@ -95,7 +98,7 @@ npx.cmd prisma migrate dev --schema prisma/schema.prisma --name phase_4_auth_dat
 npx.cmd prisma db seed --schema prisma/schema.prisma
 ```
 
-The seed is idempotent and upserts the 10 supported moods.
+The seed is idempotent and upserts the 10 supported moods. No Phase 5 or Phase 6 Prisma migration was required.
 
 ## Spotify Setup
 
@@ -107,7 +110,7 @@ To use real Spotify playlist search:
 2. Log in with a Spotify account.
 3. Click **Create app**.
 4. Enter an app name and description.
-5. Add a valid redirect URI. Phase 4 does not use Spotify user OAuth, so this is only required by Spotify app setup.
+5. Add a valid redirect URI. The current backend playlist integration uses Client Credentials, not Spotify user OAuth.
 6. Save the app.
 7. Open the app settings.
 8. Copy the **Client ID** and **Client Secret**.
@@ -167,17 +170,11 @@ Protected with `Authorization: Bearer <token>`:
 
 Playlist generation still works for guests. When a valid JWT is sent, successful generate/regenerate requests are saved to playlist history. Manual mood card generations save `inputType: "manual"`; journal-detected generations save `inputType: "text"` and never store the original journal text.
 
-## Build Checks
-
-```powershell
-cd "D:\PROJECTS\Mood-Based Playlist Generator"
-npm.cmd run build --workspace backend
-npm.cmd run build --workspace frontend
-```
-
 ## Journal Mood Detection
 
-The Home page journal box calls `POST /api/moods/detect`. The backend validates text length, rejects HTML, normalizes the text, scores mood keywords and phrases locally, and returns a detected mood, confidence, reason, and matched signals. The full journal text is not stored in the database or playlist history.
+The Home page journal box calls `POST /api/moods/detect`. The backend validates text length, rejects HTML, normalizes the text, scores mood keywords and phrases locally, and returns a detected mood, confidence, reason, and matched signals.
+
+Privacy rule: the full journal text is not stored in the database, playlist history, API logs, share links, or shared playlist responses.
 
 Example request:
 
@@ -185,8 +182,7 @@ Example request:
 {
   "text": "I am overwhelmed with deadlines and anxiety."
 }
-``` 
-
+```
 
 ## Sharing And Dashboard
 
@@ -196,16 +192,25 @@ Authenticated users can create share links for their own playlist history items.
 http://localhost:5173/share/<shareId>
 ```
 
-The backend builds share URLs from `FRONTEND_URL`. Public share responses include playlist result data, mood, source, query, and dates only. They do not expose user email, user name, JWT data, internal database ids, or journal text.
+The backend builds share URLs from `FRONTEND_URL`. Public share responses include playlist result data, mood, source, query, and dates only. They do not expose user email, user name, JWT data, internal database IDs, password hashes, or journal text.
 
 Dashboard analytics are available at `GET /api/users/dashboard` and power the frontend dashboard cards, mood counts, favorite shortcuts, recent history actions, and active share management.
+
+## Build Checks
+
+```powershell
+cd "D:\PROJECTS\Mood-Based Playlist Generator"
+npm.cmd run build --workspace backend
+npm.cmd run build --workspace frontend
+```
 
 ## Current Limitations
 
 - Spotify user OAuth is not implemented.
-- The app cannot save playlists to a Spotify account.
-- Sharing links remain placeholders for a later phase.
-- Dashboard analytics/admin monitoring are not implemented.
+- The app cannot save playlists to a user's Spotify account.
+- External/AI sentiment analysis is not implemented; mood detection is local and rule-based.
+- Advanced admin monitoring and production analytics are not implemented.
+- Deployment is not configured yet.
 - Spotify platform access can vary by app mode and Spotify policy; fallback suggestions keep the app usable during development.
 
 ## Future Roadmap
