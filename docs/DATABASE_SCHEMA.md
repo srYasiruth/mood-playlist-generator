@@ -1,4 +1,4 @@
-﻿# Database Schema
+# Database Schema
 
 The project uses PostgreSQL with Prisma ORM. The schema lives in `backend/prisma/schema.prisma`.
 
@@ -18,7 +18,8 @@ The seed script upserts the 10 supported moods and is safe to run more than once
 Stores registered users.
 
 - `id`: UUID primary key
-- `name`: display name
+- 
+ame`: display name
 - `email`: unique login email
 - `passwordHash`: hashed password, never returned to the frontend
 - `role`: user role, defaults to `USER`
@@ -32,7 +33,8 @@ Stores supported moods and metadata used by favorite moods and future database-b
 
 - `id`: UUID primary key
 - `key`: unique lowercase mood key such as `happy` or `focused`
-- `name`: display name
+- 
+ame`: display name
 - `description`: short mood description
 - `keywords`: JSON keyword/search metadata
 - `genres`: JSON genre metadata
@@ -78,7 +80,7 @@ Stores authenticated users' generated playlist snapshots.
 - `resultData`: JSON normalized playlist response snapshot
 - `createdAt`: creation timestamp
 
-Guest playlist generation does not create history records.
+Guest playlist generation does not create history records. Journal-based generation stores `inputType: "text"` and keeps `journalTextSaved: false`; the original journal text is not stored in this table or inside `resultData`.
 
 ## SharedPlaylist
 

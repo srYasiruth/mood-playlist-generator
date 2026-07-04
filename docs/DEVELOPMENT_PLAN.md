@@ -1,4 +1,4 @@
-﻿# Development Plan
+# Development Plan
 
 ## Phase 1: Planning and Setup - Completed
 
@@ -46,12 +46,18 @@
 - Connected frontend login, register, navbar session state, dashboard, favorites, history, and authenticated generate/regenerate flows.
 - Preserved frontend offline fallback behavior for guest demo usage.
 
-## Phase 5: Journal Mood Detection
+## Phase 5: Journal Mood Detection - Completed
 
-- Add journal text mood detection.
-- Map detected moods to playlist search criteria.
-- Add validation and privacy-aware handling of journal text.
-- Keep journal text private by default unless explicit persistence is introduced later.
+- Added public `POST /api/moods/detect` endpoint.
+- Added local rule-based mood detection for all 10 supported moods.
+- Added journal validation for required text, 5 to 500 character length, and HTML rejection.
+- Added confidence scoring, matched signals, and user-friendly reasons.
+- Preserved privacy: full journal text is not stored by default.
+- Extended playlist generation/regeneration to accept `inputType: "manual" | "text"`.
+- Saved authenticated journal-based playlist history with `inputType: "text"` and `journalTextSaved: false`.
+- Replaced the Home page journal placeholder with a real detection UI.
+- Added frontend validation, loading, error, detected mood result, confidence badge, matched signal chips, and generate CTA.
+- Preserved manual mood card generation and guest playlist generation.
 
 ## Phase 6: Sharing and Dashboard Enhancements
 

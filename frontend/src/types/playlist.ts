@@ -1,4 +1,5 @@
-﻿export type PlaylistSource = "spotify" | "youtube" | "fallback" | "mock" | string;
+export type PlaylistSource = "spotify" | "youtube" | "fallback" | "mock" | string;
+export type PlaylistInputType = "manual" | "text";
 
 export type Playlist = {
   id: string;
@@ -26,6 +27,7 @@ export type PlaylistGenerationResponse = {
   query: string;
   source: string;
   playlists: Playlist[];
+  inputType?: PlaylistInputType;
   meta?: {
     cached?: boolean;
     fallbackUsed?: boolean;

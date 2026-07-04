@@ -1,6 +1,6 @@
-﻿import { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { enrichMood, localMoods } from "../data/moods";
-import type { Mood } from "../types/mood";
+import type { DetectMoodRequest, DetectMoodResponse, Mood } from "../types/mood";
 import { apiClient } from "./apiClient";
 
 type BackendMood = Partial<Mood> & {
@@ -38,4 +38,9 @@ export async function getMoodCatalog(): Promise<MoodCatalogResult> {
         : "Using local mood data while the backend response is unavailable."
     };
   }
+}
+
+export async function detectMood(request: DetectMoodRequest): Promise<DetectMoodResponse> {
+  const response = await apiClient.post<DetectMoodResponse>("/api/moods/detect", request, { timeout: 5000 });
+  return response.data;
 }

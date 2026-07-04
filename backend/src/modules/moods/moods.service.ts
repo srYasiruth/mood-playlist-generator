@@ -1,4 +1,5 @@
-﻿import { prisma } from "../../config/database";
+import { prisma } from "../../config/database";
+import { detectMoodFromText } from "../../utils/moodDetector";
 import { getMoodDefinition } from "../../utils/moodMapping";
 import { initialMoods } from "./moods.data";
 
@@ -48,6 +49,22 @@ async function ensureMoodByKey(moodKey: string) {
       }
     }
   });
+}
+
+export async function detectJournalMood(text: string) {
+  const result = detectMoodFromText(text);
+  const moodDefinition = getMoodDefinition(result.detectedMood);
+  const mood = await ensureMoodByKey(result.detectedMood);
+
+  return {
+    ...result,
+    mood: {
+      id: mood.id,
+      name: mood.name,
+      slug: mood.key,
+      description: mood.description ?? moodDefinition?.description ?? ""
+    }
+  };
 }
 
 export async function addFavoriteMood(userId: string, moodKey: string) {

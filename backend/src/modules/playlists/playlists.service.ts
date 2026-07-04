@@ -1,4 +1,4 @@
-﻿import { prisma } from "../../config/database";
+import { prisma } from "../../config/database";
 import { env } from "../../config/env";
 import {
   searchPlaylists,
@@ -22,8 +22,8 @@ type CacheEntry = {
 const playlistCache = new Map<string, CacheEntry>();
 const lastQueryByMood = new Map<string, string>();
 
-function cacheKey(source: string, mood: string, query: string, limit: number) {
-  return `${source}:${mood}:${query}:${limit}`;
+function cacheKey(source: string, mood: string, query: string, limit: number, inputType: PlaylistGenerationRequest["inputType"]) {
+  return `${source}:${mood}:${query}:${limit}:${inputType}`;
 }
 
 function getCachedResponse(key: string) {
@@ -82,6 +82,7 @@ function buildResponse(params: {
   query: string;
   source: string;
   playlists: PlaylistItem[];
+  inputType: PlaylistGenerationRequest["inputType"];
   cached?: boolean;
   fallbackUsed: boolean;
   message?: string;
@@ -92,6 +93,7 @@ function buildResponse(params: {
     query: params.query,
     source: params.source,
     playlists: params.playlists,
+    inputType: params.inputType,
     meta: {
       cached: params.cached ?? false,
       fallbackUsed: params.fallbackUsed,
@@ -113,6 +115,7 @@ async function generateFallbackResponse(request: PlaylistGenerationRequest, quer
     query,
     source: "fallback",
     playlists,
+    inputType: request.inputType,
     fallbackUsed: true,
     message
   });
@@ -135,7 +138,7 @@ export async function generatePlaylists(request: PlaylistGenerationRequest, opti
     return generateFallbackResponse(request, query, "Using demo playlist suggestions.");
   }
 
-  const key = cacheKey(request.source, request.mood, query, request.limit);
+  const key = cacheKey(request.source, request.mood, query, request.limit, request.inputType);
   const cached = getCachedResponse(key);
   if (cached) {
     return cached;
@@ -160,6 +163,7 @@ export async function generatePlaylists(request: PlaylistGenerationRequest, opti
       query,
       source: "spotify",
       playlists,
+      inputType: request.inputType,
       fallbackUsed: false
     });
     setCachedResponse(key, response);
@@ -203,7 +207,7 @@ export async function savePlaylistHistory(userId: string, response: PlaylistGene
     data: {
       userId,
       mood: response.mood,
-      inputType: "manual",
+      inputType: response.inputType,
       journalTextSaved: false,
       searchQuery: response.query,
       apiSource: response.source,

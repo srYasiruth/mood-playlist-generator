@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/common/EmptyState";
@@ -11,12 +11,13 @@ import { useMoodTheme } from "../hooks/useMoodTheme";
 import { usePlaylistMock } from "../hooks/usePlaylistMock";
 import { saveFavoriteMood } from "../services/userService";
 import type { Mood } from "../types/mood";
-import type { Playlist, PlaylistGenerationResponse } from "../types/playlist";
+import type { Playlist, PlaylistGenerationResponse, PlaylistInputType } from "../types/playlist";
 
 type ResultsLocationState = {
   mood?: Mood;
   playlists?: Playlist[];
   playlistResponse?: PlaylistGenerationResponse;
+  inputType?: PlaylistInputType;
 };
 
 export function ResultsPage() {
@@ -26,6 +27,7 @@ export function ResultsPage() {
   const { selectedMood, setSelectedMood, theme } = useMoodTheme();
   const { isAuthenticated } = useAuth();
   const [favoriteMessage, setFavoriteMessage] = useState<string | null>(null);
+  const [inputType, setInputType] = useState<PlaylistInputType>(routeState?.inputType ?? routeState?.playlistResponse?.inputType ?? "manual");
   const {
     playlists,
     setPlaylists,
@@ -52,18 +54,21 @@ export function ResultsPage() {
     if (routeState?.playlistResponse) {
       setLastResponse(routeState.playlistResponse);
       setStatusMessage(routeState.playlistResponse.meta?.message ?? null);
+      setInputType(routeState.playlistResponse.inputType ?? routeState.inputType ?? "manual");
+    } else if (routeState?.inputType) {
+      setInputType(routeState.inputType);
     }
-  }, [routeState?.mood, routeState?.playlistResponse, routeState?.playlists, setLastResponse, setPlaylists, setSelectedMood, setStatusMessage]);
+  }, [routeState?.inputType, routeState?.mood, routeState?.playlistResponse, routeState?.playlists, setLastResponse, setPlaylists, setSelectedMood, setStatusMessage]);
 
   useEffect(() => {
     if (!routeState?.playlists?.length && activeMood && playlists.length === 0 && !isLoading) {
-      generate(activeMood);
+      generate(activeMood, inputType);
     }
-  }, [activeMood, generate, isLoading, playlists.length, routeState?.playlists?.length]);
+  }, [activeMood, generate, inputType, isLoading, playlists.length, routeState?.playlists?.length]);
 
   const handleRegenerate = async () => {
     if (activeMood) {
-      await regenerate(activeMood);
+      await regenerate(activeMood, inputType);
     }
   };
 
@@ -109,6 +114,7 @@ export function ResultsPage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
               Query: <span className="font-semibold text-slate-950">{lastResponse?.query ?? "selecting..."}</span>
               {lastResponse?.meta?.cached ? " · Cached response" : ""}
+              {inputType === "text" ? " · Journal detected mood" : ""}
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">

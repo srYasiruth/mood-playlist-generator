@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 import { env } from "../../config/env";
 import { supportedMoodIds } from "../../utils/moodMapping";
 import { PlaylistApiError, type PlaylistGenerationRequest } from "./playlists.types";
@@ -6,7 +6,8 @@ import { PlaylistApiError, type PlaylistGenerationRequest } from "./playlists.ty
 const playlistRequestSchema = z.object({
   mood: z.string({ required_error: "Mood is required." }).trim().toLowerCase().min(1),
   source: z.enum(["spotify", "fallback"]).default("spotify"),
-  limit: z.coerce.number().int().min(1).max(20).default(env.PLAYLIST_DEFAULT_LIMIT)
+  limit: z.coerce.number().int().min(1).max(20).default(env.PLAYLIST_DEFAULT_LIMIT),
+  inputType: z.enum(["manual", "text"]).default("manual")
 });
 
 export function validatePlaylistRequest(body: unknown): PlaylistGenerationRequest {

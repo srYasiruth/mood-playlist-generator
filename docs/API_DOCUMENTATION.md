@@ -1,4 +1,4 @@
-﻿# API Documentation
+# API Documentation
 
 Base URL for local development: `http://localhost:5000`
 
@@ -103,6 +103,54 @@ Returns success for stateless JWT logout. The frontend removes the local token a
 
 Returns the 10 supported moods for the frontend.
 
+
+## POST /api/moods/detect
+
+Public. Detects the closest supported mood from a short journal entry using local rule-based keyword and phrase scoring. This endpoint does not require authentication and does not store the journal text.
+
+### Request
+
+```json
+{
+  "text": "I feel tired and stressed after studying all day."
+}
+```
+
+### Validation
+
+- `text` is required.
+- `text` must be a string.
+- Trimmed text must be 5 to 500 characters.
+- HTML is rejected.
+- Unsafe raw journal text is not echoed back.
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "detectedMood": "stressed",
+  "mood": {
+    "id": "database_mood_id",
+    "name": "Stressed",
+    "slug": "stressed",
+    "description": "Grounding music for easing pressure and tension."
+  },
+  "confidence": 0.82,
+  "reason": "Your text includes stress, pressure, or anxiety-related words.",
+  "matchedSignals": ["stressed", "studying", "tired"]
+}
+```
+
+### Invalid Input Example
+
+```json
+{
+  "success": false,
+  "message": "Journal text must be between 5 and 500 characters.",
+  "errorCode": "INVALID_INPUT"
+}
+```
 ## POST /api/moods/favorites
 
 Protected. Saves a mood as a favorite for the current user.
@@ -155,7 +203,8 @@ Generates playlist recommendations for a supported mood. Guests can use this end
 {
   "mood": "focused",
   "source": "spotify",
-  "limit": 8
+  "limit": 8,
+  "inputType": "manual"
 }
 ```
 
@@ -167,6 +216,7 @@ Generates playlist recommendations for a supported mood. Guests can use this end
   "mood": "focused",
   "query": "lofi study",
   "source": "spotify",
+  "inputType": "manual",
   "playlists": [
     {
       "id": "spotify_playlist_id",
@@ -195,6 +245,7 @@ Generates playlist recommendations for a supported mood. Guests can use this end
   "mood": "happy",
   "query": "feel good music",
   "source": "fallback",
+  "inputType": "manual",
   "playlists": [],
   "meta": {
     "cached": false,
@@ -207,7 +258,7 @@ Generates playlist recommendations for a supported mood. Guests can use this end
 
 ## POST /api/playlists/regenerate
 
-Uses the same request and response shape as generate. Authenticated regenerate requests are also saved to playlist history.
+Uses the same request and response shape as generate. Authenticated regenerate requests are also saved to playlist history. Use `inputType: "text"` when the user accepted a detected journal mood.
 
 ## GET /api/playlists/history
 
@@ -254,4 +305,6 @@ Protected. Clears all playlist history for the current user only.
 
 ## Frontend API Behavior
 
-The frontend prefers backend responses. If the backend is offline, mood and playlist flows fall back to local demo data and show a non-blocking message. Authenticated saving, favorites, and history require the backend and database to be running.
+The frontend prefers backend responses. If the backend is offline, mood and playlist flows fall back to local demo data and show a non-blocking message. Journal mood detection requires the backend because it runs on the server. Authenticated saving, favorites, and history require the backend and database to be running.
+
+Privacy: the full journal text is not stored in `PlaylistHistory`, `ApiLog`, or playlist result snapshots. Authenticated text-based generations save only `inputType: "text"`, `journalTextSaved: false`, mood, query, source, and normalized playlist result data.

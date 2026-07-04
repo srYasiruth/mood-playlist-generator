@@ -1,10 +1,10 @@
-﻿# Mood-Based Playlist Generator
+# Mood-Based Playlist Generator
 
-A full-stack web application for recommending playlists based on a user's mood. The current version includes a polished mood-first frontend, backend playlist generation with Spotify/demo fallback behavior, and authenticated user features backed by PostgreSQL and Prisma.
+A full-stack web application for recommending playlists based on a user's mood. The current version includes a polished mood-first frontend, backend playlist generation with Spotify/demo fallback behavior, authenticated user features backed by PostgreSQL and Prisma, and local rule-based journal mood detection.
 
 ## Current Phase
 
-Phase 4 - Authentication and Database Features
+Phase 5 - Journal Mood Detection
 
 Implemented so far:
 
@@ -17,8 +17,11 @@ Implemented so far:
 - Favorite moods for authenticated users
 - Playlist generation history for authenticated users
 - Guest playlist generation preserved exactly as before
+- Rule-based journal mood detection for the 10 supported moods
+- Journal detection result UI with confidence, reason, matched signals, and generate action
+- Text-based playlist generations saved with `inputType: "text"` for authenticated users
 
-Not implemented yet: journal sentiment analysis, Spotify user OAuth, saving playlists to a user's Spotify account, real sharing links, dashboard analytics, or deployment.
+Not implemented yet: external/AI sentiment analysis, Spotify user OAuth, saving playlists to a user's Spotify account, real sharing links, dashboard analytics, or deployment.
 
 ## Tech Stack
 
@@ -27,6 +30,7 @@ Not implemented yet: journal sentiment analysis, Spotify user OAuth, saving play
 - Database: PostgreSQL with Prisma ORM
 - Music API: Spotify Web API through backend server-side credentials, with demo fallback suggestions
 - Auth: JWT Bearer tokens for this portfolio MVP
+- Mood detection: free local rule-based keyword and phrase scoring
 
 ## Install Dependencies
 
@@ -137,6 +141,7 @@ Public:
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
+- `POST /api/moods/detect`
 - `POST /api/playlists/generate`
 - `POST /api/playlists/regenerate`
 
@@ -150,7 +155,7 @@ Protected with `Authorization: Bearer <token>`:
 - `DELETE /api/playlists/history/:id`
 - `DELETE /api/playlists/history`
 
-Playlist generation still works for guests. When a valid JWT is sent, successful generate/regenerate requests are saved to playlist history.
+Playlist generation still works for guests. When a valid JWT is sent, successful generate/regenerate requests are saved to playlist history. Manual mood card generations save `inputType: "manual"`; journal-detected generations save `inputType: "text"` and never store the original journal text.
 
 ## Build Checks
 
@@ -160,17 +165,27 @@ npm.cmd run build --workspace backend
 npm.cmd run build --workspace frontend
 ```
 
+## Journal Mood Detection
+
+The Home page journal box calls `POST /api/moods/detect`. The backend validates text length, rejects HTML, normalizes the text, scores mood keywords and phrases locally, and returns a detected mood, confidence, reason, and matched signals. The full journal text is not stored in the database or playlist history.
+
+Example request:
+
+```json
+{
+  "text": "I am overwhelmed with deadlines and anxiety."
+}
+``` 
+
 ## Current Limitations
 
 - Spotify user OAuth is not implemented.
 - The app cannot save playlists to a Spotify account.
-- Journal mood detection remains a UI placeholder.
 - Sharing links remain placeholders for a later phase.
 - Dashboard analytics/admin monitoring are not implemented.
 - Spotify platform access can vary by app mode and Spotify policy; fallback suggestions keep the app usable during development.
 
 ## Future Roadmap
 
-- Phase 5: Journal Mood Detection
 - Phase 6: Sharing and Dashboard Enhancements
 - Phase 7: Testing and Deployment

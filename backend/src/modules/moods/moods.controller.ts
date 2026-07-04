@@ -1,7 +1,15 @@
-﻿import type { Request, Response } from "express";
+import type { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../../middleware/auth.middleware";
 import { formatSuccess } from "../../utils/responseFormatter";
-import { addFavoriteMood, getFavoriteMoods, getInitialMoods, MoodError, removeFavoriteMood } from "./moods.service";
+import {
+  addFavoriteMood,
+  detectJournalMood,
+  getFavoriteMoods,
+  getInitialMoods,
+  MoodError,
+  removeFavoriteMood
+} from "./moods.service";
+import { validateMoodDetectionRequest } from "./moods.validation";
 
 function sendMoodError(res: Response, error: unknown) {
   if (error instanceof MoodError) {
@@ -21,6 +29,16 @@ function sendMoodError(res: Response, error: unknown) {
 
 export function getMoods(_req: Request, res: Response) {
   res.json(formatSuccess("Moods retrieved successfully", getInitialMoods()));
+}
+
+export async function detectMoodController(req: Request, res: Response) {
+  try {
+    const { text } = validateMoodDetectionRequest(req.body);
+    const result = await detectJournalMood(text);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return sendMoodError(res, error);
+  }
 }
 
 export async function addFavoriteMoodController(req: AuthenticatedRequest, res: Response) {

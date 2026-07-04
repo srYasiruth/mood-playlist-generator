@@ -1,4 +1,5 @@
-﻿export type PlaylistSource = "spotify" | "fallback";
+export type PlaylistSource = "spotify" | "fallback";
+export type PlaylistInputType = "manual" | "text";
 
 export type PlaylistErrorCode =
   | "INVALID_INPUT"
@@ -24,6 +25,7 @@ export type PlaylistGenerationRequest = {
   mood: string;
   source: PlaylistSource;
   limit: number;
+  inputType: PlaylistInputType;
 };
 
 export type PlaylistGenerationResponse = {
@@ -32,6 +34,7 @@ export type PlaylistGenerationResponse = {
   query: string;
   source: string;
   playlists: PlaylistItem[];
+  inputType: PlaylistInputType;
   meta: {
     cached: boolean;
     fallbackUsed: boolean;
