@@ -1,9 +1,14 @@
+﻿export type PlaylistSource = "Spotify" | "YouTube" | "Mock";
+
 export type Playlist = {
   id: string;
   title: string;
-  provider: "Spotify" | "YouTube" | "Unknown";
+  description: string;
+  provider: PlaylistSource;
   externalUrl: string;
-  imageUrl?: string;
+  coverGradient: string;
+  trackCount: number;
+  moodTag: string;
   tracks?: PlaylistTrack[];
 };
 
@@ -13,4 +18,3 @@ export type PlaylistTrack = {
   artist: string;
   durationMs?: number;
 };
-

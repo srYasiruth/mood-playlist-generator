@@ -1,6 +1,7 @@
-import { Route, Routes } from "react-router-dom";
-import { Navbar } from "./components/Navbar";
+﻿import { Route, Routes } from "react-router-dom";
+import { Layout } from "./components/Layout";
 import { ThemeBackground } from "./components/ThemeBackground";
+import { MoodThemeProvider } from "./hooks/useMoodTheme";
 import { DashboardPage } from "./pages/DashboardPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -10,19 +11,20 @@ import { SharedPlaylistPage } from "./pages/SharedPlaylistPage";
 
 export default function App() {
   return (
-    <ThemeBackground>
-      <Navbar />
-      <main className="mx-auto w-full max-w-6xl px-4 py-8">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/results" element={<ResultsPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/shared/:shareId" element={<SharedPlaylistPage />} />
-        </Routes>
-      </main>
-    </ThemeBackground>
+    <MoodThemeProvider>
+      <ThemeBackground>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/results" element={<ResultsPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/share/:shareId" element={<SharedPlaylistPage />} />
+            <Route path="/shared/:shareId" element={<SharedPlaylistPage />} />
+          </Routes>
+        </Layout>
+      </ThemeBackground>
+    </MoodThemeProvider>
   );
 }
-

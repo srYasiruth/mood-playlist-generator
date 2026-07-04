@@ -1,4 +1,4 @@
-# API Documentation
+﻿# API Documentation
 
 Base URL for local development: `http://localhost:5000`
 
@@ -17,7 +17,7 @@ Checks whether the backend API is running.
 
 ## GET /api/moods
 
-Returns the initial static mood list for Phase 1.
+Returns the initial static mood list.
 
 ### Response
 
@@ -33,7 +33,7 @@ Returns the initial static mood list for Phase 1.
 }
 ```
 
-The full Phase 1 mood list is:
+The full mood list is:
 
 - Happy
 - Sad
@@ -46,3 +46,14 @@ The full Phase 1 mood list is:
 - Stressed
 - Sleepy
 
+## Phase 2 Frontend API Usage
+
+The frontend attempts to load moods from `GET /api/moods` through `frontend/src/services/moodService.ts`.
+
+If the backend is offline or unavailable, the frontend falls back to local mood metadata from `frontend/src/data/moods.ts` and shows a non-blocking message:
+
+```text
+Using local mood data. Backend is not connected.
+```
+
+No real Spotify or YouTube API calls are made in Phase 2.
