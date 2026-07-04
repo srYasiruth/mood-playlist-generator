@@ -12,41 +12,30 @@ enum UserRole {
   ADMIN
 }
 
-enum PlaylistInputType {
-  MANUAL
-  JOURNAL
-}
-
-enum MusicApiSource {
-  SPOTIFY
-  YOUTUBE
-  UNKNOWN
-}
-
 model User {
-  id               String            @id @default(cuid())
-  name             String
-  email            String            @unique
-  passwordHash     String
-  role             UserRole          @default(USER)
-  favoriteMoods    FavoriteMood[]
-  playlistHistory  PlaylistHistory[]
-  sharedPlaylists  SharedPlaylist[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  name            String
+  email           String            @unique
+  passwordHash    String
+  role            UserRole          @default(USER)
+  favoriteMoods   FavoriteMood[]
+  playlistHistory PlaylistHistory[]
+  sharedPlaylists SharedPlaylist[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model Mood {
-  id              String            @id @default(cuid())
-  name            String            @unique
-  description     String?
-  keywords        String[]
-  genres          String[]
-  theme           Json?
-  favoriteMoods   FavoriteMood[]
-  playlistHistory PlaylistHistory[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id            String         @id @default(cuid())
+  key           String         @unique
+  name          String
+  description   String?
+  keywords      Json
+  genres        Json
+  theme         Json?
+  favoriteMoods FavoriteMood[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model FavoriteMood {
@@ -62,33 +51,31 @@ model FavoriteMood {
 }
 
 model PlaylistHistory {
-  id               String            @id @default(cuid())
-  userId           String?
-  moodId           String?
-  moodName         String
-  inputType        PlaylistInputType
-  journalTextSaved String?
-  searchQuery      String
-  apiSource        MusicApiSource    @default(UNKNOWN)
-  resultData       Json?
-  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  mood             Mood?             @relation(fields: [moodId], references: [id], onDelete: SetNull)
+  id               String           @id @default(cuid())
+  userId           String
+  mood             String
+  inputType        String           @default("manual")
+  journalTextSaved Boolean          @default(false)
+  searchQuery      String?
+  apiSource        String
+  resultData       Json
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   sharedPlaylists  SharedPlaylist[]
-  createdAt        DateTime          @default(now())
+  createdAt        DateTime         @default(now())
 
   @@index([userId])
-  @@index([moodId])
+  @@index([mood])
 }
 
 model SharedPlaylist {
-  id                String          @id @default(cuid())
-  shareId           String          @unique
-  userId            String
-  playlistHistoryId String
-  isActive          Boolean         @default(true)
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  playlistHistory   PlaylistHistory @relation(fields: [playlistHistoryId], references: [id], onDelete: Cascade)
-  createdAt         DateTime        @default(now())
+  id                String           @id @default(cuid())
+  shareId           String           @unique
+  userId            String?
+  playlistHistoryId String?
+  isActive          Boolean          @default(true)
+  user              User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  playlistHistory   PlaylistHistory? @relation(fields: [playlistHistoryId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
   expiresAt         DateTime?
 
   @@index([userId])
@@ -104,4 +91,3 @@ model ApiLog {
   errorMessage String?
   createdAt    DateTime @default(now())
 }
-

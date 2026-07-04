@@ -1,4 +1,4 @@
-﻿import { useEffect } from "react";
+﻿import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/common/EmptyState";
@@ -6,8 +6,10 @@ import { ErrorState } from "../components/common/ErrorState";
 import { LoadingState } from "../components/common/LoadingState";
 import { StatusBanner } from "../components/common/StatusBanner";
 import { PlaylistCard } from "../components/PlaylistCard";
+import { useAuth } from "../hooks/useAuth";
 import { useMoodTheme } from "../hooks/useMoodTheme";
 import { usePlaylistMock } from "../hooks/usePlaylistMock";
+import { saveFavoriteMood } from "../services/userService";
 import type { Mood } from "../types/mood";
 import type { Playlist, PlaylistGenerationResponse } from "../types/playlist";
 
@@ -22,6 +24,8 @@ export function ResultsPage() {
   const location = useLocation();
   const routeState = location.state as ResultsLocationState | null;
   const { selectedMood, setSelectedMood, theme } = useMoodTheme();
+  const { isAuthenticated } = useAuth();
+  const [favoriteMessage, setFavoriteMessage] = useState<string | null>(null);
   const {
     playlists,
     setPlaylists,
@@ -63,6 +67,24 @@ export function ResultsPage() {
     }
   };
 
+  const handleSaveFavorite = async () => {
+    if (!activeMood) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setFavoriteMessage("Please log in to save favorite moods.");
+      return;
+    }
+
+    try {
+      await saveFavoriteMood(activeMood);
+      setFavoriteMessage(`${activeMood.name} saved to your favorite moods.`);
+    } catch {
+      setFavoriteMessage("Could not save this favorite mood. Please try again.");
+    }
+  };
+
   if (!activeMood) {
     return (
       <EmptyState
@@ -96,11 +118,15 @@ export function ResultsPage() {
             <Button onClick={() => navigate("/")} variant="secondary">
               Back to Home
             </Button>
+            <Button onClick={handleSaveFavorite} variant="ghost">
+              Save mood
+            </Button>
           </div>
         </div>
       </div>
 
       {statusMessage ? <StatusBanner message={statusMessage} /> : null}
+      {favoriteMessage ? <StatusBanner message={favoriteMessage} tone={isAuthenticated ? "info" : "warning"} /> : null}
       {error ? <ErrorState message={error} onRetry={handleRegenerate} /> : null}
       {isLoading ? <LoadingState /> : null}
       {!isLoading && playlists.length === 0 ? (

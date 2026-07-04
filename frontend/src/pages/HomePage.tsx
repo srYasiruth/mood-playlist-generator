@@ -7,20 +7,24 @@ import { JournalInput } from "../components/common/JournalInput";
 import { LoadingState } from "../components/common/LoadingState";
 import { StatusBanner } from "../components/common/StatusBanner";
 import { MoodCard } from "../components/MoodCard";
+import { useAuth } from "../hooks/useAuth";
 import { useMoodTheme } from "../hooks/useMoodTheme";
 import { usePlaylistMock } from "../hooks/usePlaylistMock";
 import { getMoodCatalog } from "../services/moodService";
+import { saveFavoriteMood } from "../services/userService";
 import type { Mood } from "../types/mood";
 
 export function HomePage() {
   const navigate = useNavigate();
   const { selectedMood, setSelectedMood, theme } = useMoodTheme();
+  const { isAuthenticated } = useAuth();
   const { isLoading, error, statusMessage, generate } = usePlaylistMock();
   const [moods, setMoods] = useState<Mood[]>([]);
   const [isLoadingMoods, setIsLoadingMoods] = useState(true);
   const [catalogMessage, setCatalogMessage] = useState<string | null>(null);
   const [journalText, setJournalText] = useState("");
   const [journalMessage, setJournalMessage] = useState<string | null>(null);
+  const [favoriteMessage, setFavoriteMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -62,6 +66,24 @@ export function HomePage() {
     }
   };
 
+  const handleSaveFavorite = async () => {
+    if (!selectedMood) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setFavoriteMessage("Please log in to save favorite moods.");
+      return;
+    }
+
+    try {
+      await saveFavoriteMood(selectedMood);
+      setFavoriteMessage(`${selectedMood.name} saved to your favorite moods.`);
+    } catch {
+      setFavoriteMessage("Could not save this favorite mood. Please try again.");
+    }
+  };
+
   const handleDetectMood = () => {
     setJournalMessage(
       journalText.trim()
@@ -75,7 +97,7 @@ export function HomePage() {
       <div className="grid gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
         <div className="space-y-6">
           <div className="inline-flex rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur">
-            Phase 3 playlist API connected
+            Phase 4 account features connected
           </div>
           <div>
             <p className="text-sm font-semibold uppercase tracking-normal" style={{ color: theme.accent }}>
@@ -85,7 +107,7 @@ export function HomePage() {
               How are you feeling today?
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700 sm:text-lg">
-              Pick a mood and get playlist recommendations shaped around the feeling. The backend uses Spotify when credentials are configured, with safe demo suggestions otherwise.
+              Pick a mood and get playlist recommendations shaped around the feeling. Logged-in users can save favorite moods and keep generation history.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -95,9 +117,13 @@ export function HomePage() {
             <Button variant="secondary" onClick={() => setSelectedMood(null)} disabled={!selectedMood}>
               Clear mood
             </Button>
+            <Button variant="ghost" onClick={handleSaveFavorite} disabled={!selectedMood}>
+              Save favorite
+            </Button>
           </div>
           {catalogMessage ? <StatusBanner message={catalogMessage} tone="warning" /> : null}
           {statusMessage ? <StatusBanner message={statusMessage} /> : null}
+          {favoriteMessage ? <StatusBanner message={favoriteMessage} tone={isAuthenticated ? "info" : "warning"} /> : null}
           {error ? <ErrorState message={error} onRetry={handleGenerate} /> : null}
         </div>
 

@@ -1,6 +1,14 @@
-﻿import type { Request, Response } from "express";
-import { generatePlaylists } from "./playlists.service";
-import { PlaylistApiError } from "./playlists.types";
+﻿import type { Response } from "express";
+import type { AuthenticatedRequest } from "../../middleware/auth.middleware";
+import { logger } from "../../utils/logger";
+import {
+  clearPlaylistHistory,
+  deletePlaylistHistoryItem,
+  generatePlaylists,
+  getPlaylistHistory,
+  savePlaylistHistory
+} from "./playlists.service";
+import { PlaylistApiError, type PlaylistGenerationResponse } from "./playlists.types";
 import { validatePlaylistRequest } from "./playlists.validation";
 
 function sendPlaylistError(res: Response, error: unknown) {
@@ -14,26 +22,69 @@ function sendPlaylistError(res: Response, error: unknown) {
 
   return res.status(500).json({
     success: false,
-    message: "Playlist generation failed.",
+    message: "Playlist request failed.",
     errorCode: "SERVER_ERROR"
   });
 }
 
-export async function generatePlaylistsController(req: Request, res: Response) {
+async function saveHistoryIfAuthenticated(userId: string | undefined, response: PlaylistGenerationResponse) {
+  if (!userId) {
+    return;
+  }
+
+  try {
+    await savePlaylistHistory(userId, response);
+  } catch (error) {
+    logger.error(error instanceof Error ? error.message : "Failed to save playlist history.");
+  }
+}
+
+export async function generatePlaylistsController(req: AuthenticatedRequest, res: Response) {
   try {
     const request = validatePlaylistRequest(req.body);
     const response = await generatePlaylists(request);
+    await saveHistoryIfAuthenticated(req.authUser?.userId, response);
     return res.json(response);
   } catch (error) {
     return sendPlaylistError(res, error);
   }
 }
 
-export async function regeneratePlaylistsController(req: Request, res: Response) {
+export async function regeneratePlaylistsController(req: AuthenticatedRequest, res: Response) {
   try {
     const request = validatePlaylistRequest(req.body);
     const response = await generatePlaylists(request, { regenerate: true });
+    await saveHistoryIfAuthenticated(req.authUser?.userId, response);
     return res.json(response);
+  } catch (error) {
+    return sendPlaylistError(res, error);
+  }
+}
+
+export async function getPlaylistHistoryController(req: AuthenticatedRequest, res: Response) {
+  try {
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+    const response = await getPlaylistHistory(req.authUser!.userId, page, limit);
+    return res.json({ success: true, ...response });
+  } catch (error) {
+    return sendPlaylistError(res, error);
+  }
+}
+
+export async function deletePlaylistHistoryItemController(req: AuthenticatedRequest, res: Response) {
+  try {
+    await deletePlaylistHistoryItem(req.authUser!.userId, req.params.id);
+    return res.json({ success: true, message: "Playlist history item deleted." });
+  } catch (error) {
+    return sendPlaylistError(res, error);
+  }
+}
+
+export async function clearPlaylistHistoryController(req: AuthenticatedRequest, res: Response) {
+  try {
+    await clearPlaylistHistory(req.authUser!.userId);
+    return res.json({ success: true, message: "Playlist history cleared." });
   } catch (error) {
     return sendPlaylistError(res, error);
   }

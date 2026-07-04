@@ -1,33 +1,32 @@
 ﻿# Mood-Based Playlist Generator
 
-A full-stack web application for recommending playlists based on a user's mood. The current version includes a polished frontend mood experience and a backend playlist generation API that can use Spotify Web API when credentials are configured, with safe demo fallbacks for local development.
+A full-stack web application for recommending playlists based on a user's mood. The current version includes a polished mood-first frontend, backend playlist generation with Spotify/demo fallback behavior, and authenticated user features backed by PostgreSQL and Prisma.
 
 ## Current Phase
 
-Phase 3 - Backend Playlist Generation API
+Phase 4 - Authentication and Database Features
 
-Implemented in this phase:
+Implemented so far:
 
-- `POST /api/playlists/generate`
-- `POST /api/playlists/regenerate`
-- Server-side trusted mood-to-query mapping
-- Spotify Client Credentials integration on the backend only
-- Spotify access-token caching
-- Playlist response normalization
-- Mood-specific backend fallback playlists
-- In-memory playlist response cache
-- Endpoint validation and rate limiting
-- Frontend connection to the real backend endpoint
-- Frontend fallback when backend is offline
+- React/Vite frontend with mood selection, dynamic themes, playlist results, loading/error/empty states, and responsive layouts
+- Express/TypeScript backend with health, mood, and playlist generation endpoints
+- Spotify Client Credentials integration on the backend only, with safe fallback playlists when Spotify is missing or unavailable
+- PostgreSQL schema managed by Prisma
+- JWT Bearer authentication for register, login, logout, and current-user lookup
+- Password hashing with bcryptjs
+- Favorite moods for authenticated users
+- Playlist generation history for authenticated users
+- Guest playlist generation preserved exactly as before
 
-Not implemented in this phase: authentication, JWT, database persistence, playlist history, favorite moods, real sharing, journal sentiment analysis, Spotify user OAuth, or saving playlists to a user's Spotify account.
+Not implemented yet: journal sentiment analysis, Spotify user OAuth, saving playlists to a user's Spotify account, real sharing links, dashboard analytics, or deployment.
 
 ## Tech Stack
 
 - Frontend: React, TypeScript, Vite, Tailwind CSS, React Router, Axios
 - Backend: Node.js, Express.js, TypeScript
-- Database: PostgreSQL planned for production, Prisma ORM schema already exists
-- Music API: Spotify Web API through backend server-side credentials
+- Database: PostgreSQL with Prisma ORM
+- Music API: Spotify Web API through backend server-side credentials, with demo fallback suggestions
+- Auth: JWT Bearer tokens for this portfolio MVP
 
 ## Install Dependencies
 
@@ -47,9 +46,50 @@ Copy-Item backend\.env.example backend\.env
 
 Never commit real `.env` files. Only `.env.example` files belong in the repository.
 
+### Frontend
+
+`frontend/.env` only needs the API base URL:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+### Backend
+
+`backend/.env` needs database, auth, and optional Spotify values:
+
+```env
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL="http://localhost:5173"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/mood_playlist_generator?schema=public"
+JWT_SECRET="replace_with_a_strong_secret"
+JWT_EXPIRES_IN="7d"
+SPOTIFY_CLIENT_ID=""
+SPOTIFY_CLIENT_SECRET=""
+YOUTUBE_API_KEY=""
+PLAYLIST_CACHE_TTL_SECONDS=900
+PLAYLIST_DEFAULT_LIMIT=8
+```
+
+Use a strong local-only `JWT_SECRET`. Do not put database URLs, JWT secrets, Spotify credentials, or YouTube keys in frontend code.
+
+## Database Setup
+
+After PostgreSQL is running and `backend/.env` has a valid `DATABASE_URL`, run:
+
+```powershell
+cd "D:\PROJECTS\Mood-Based Playlist Generator\backend"
+npx.cmd prisma generate --schema prisma/schema.prisma
+npx.cmd prisma migrate dev --schema prisma/schema.prisma --name phase_4_auth_database
+npx.cmd prisma db seed --schema prisma/schema.prisma
+```
+
+The seed is idempotent and upserts the 10 supported moods.
+
 ## Spotify Setup
 
-Spotify credentials are optional for local development. If they are missing, the backend returns mood-specific demo playlist suggestions with `meta.fallbackUsed = true`.
+Spotify credentials are optional for local development. If they are missing or Spotify playlist search is unavailable, the backend returns mood-specific demo playlist suggestions with `meta.fallbackUsed = true`.
 
 To use real Spotify playlist search:
 
@@ -57,12 +97,11 @@ To use real Spotify playlist search:
 2. Log in with a Spotify account.
 3. Click **Create app**.
 4. Enter an app name and description.
-5. Add any valid redirect URI for now, such as `http://localhost:5173`, even though Phase 3 does not use user OAuth.
+5. Add a valid redirect URI. Phase 4 does not use Spotify user OAuth, so this is only required by Spotify app setup.
 6. Save the app.
 7. Open the app settings.
-8. Copy the **Client ID**.
-9. Click to reveal/copy the **Client Secret**.
-10. Paste them into `backend/.env`:
+8. Copy the **Client ID** and **Client Secret**.
+9. Paste them into `backend/.env`:
 
 ```env
 SPOTIFY_CLIENT_ID=your_client_id_here
@@ -91,22 +130,27 @@ Default frontend URL: `http://localhost:5173`
 
 ## Current API Endpoints
 
+Public:
+
 - `GET /api/health`
 - `GET /api/moods`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
 - `POST /api/playlists/generate`
 - `POST /api/playlists/regenerate`
 
-Example playlist request:
+Protected with `Authorization: Bearer <token>`:
 
-```json
-{
-  "mood": "focused",
-  "source": "spotify",
-  "limit": 8
-}
-```
+- `GET /api/auth/me`
+- `POST /api/moods/favorites`
+- `GET /api/moods/favorites`
+- `DELETE /api/moods/favorites/:id`
+- `GET /api/playlists/history`
+- `DELETE /api/playlists/history/:id`
+- `DELETE /api/playlists/history`
 
-If Spotify credentials are configured, the backend searches Spotify playlists. If credentials are missing or Spotify is unavailable, the backend returns safe demo playlist suggestions.
+Playlist generation still works for guests. When a valid JWT is sent, successful generate/regenerate requests are saved to playlist history.
 
 ## Build Checks
 
@@ -120,14 +164,13 @@ npm.cmd run build --workspace frontend
 
 - Spotify user OAuth is not implemented.
 - The app cannot save playlists to a Spotify account.
-- Playlist history is not persisted to PostgreSQL yet.
 - Journal mood detection remains a UI placeholder.
-- Sharing and dashboard features remain placeholders.
+- Sharing links remain placeholders for a later phase.
+- Dashboard analytics/admin monitoring are not implemented.
 - Spotify platform access can vary by app mode and Spotify policy; fallback suggestions keep the app usable during development.
 
 ## Future Roadmap
 
-- Phase 4: Authentication and Database Features
 - Phase 5: Journal Mood Detection
-- Phase 6: Sharing and Dashboard
+- Phase 6: Sharing and Dashboard Enhancements
 - Phase 7: Testing and Deployment

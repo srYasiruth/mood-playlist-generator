@@ -12,15 +12,27 @@ Base URL for local development: `http://localhost:5000`
 }
 ```
 
-Supported error codes:
+Common error codes:
 
 - `INVALID_INPUT`
 - `INVALID_MOOD`
-- `API_ERROR`
+- `UNAUTHORIZED`
+- `FORBIDDEN`
 - `NOT_FOUND`
 - `RATE_LIMITED`
+- `API_ERROR`
 - `SERVER_ERROR`
 - `SPOTIFY_NOT_CONFIGURED`
+
+## Authentication
+
+Protected endpoints require this header:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+JWT tokens are issued by register and login. The frontend stores the token in localStorage for this portfolio MVP and attaches it through the Axios API client.
 
 ## GET /api/health
 
@@ -35,40 +47,107 @@ Checks whether the backend API is running.
 }
 ```
 
-## GET /api/moods
+## POST /api/auth/register
 
-Returns the initial static mood list used by the frontend.
+Creates a user, hashes the password, and returns a JWT.
+
+### Request
+
+```json
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123",
+  "confirmPassword": "password123"
+}
+```
 
 ### Response
 
 ```json
 {
   "success": true,
-  "message": "Moods retrieved successfully",
-  "data": [
-    { "id": "happy", "name": "Happy" },
-    { "id": "sad", "name": "Sad" },
-    { "id": "relaxed", "name": "Relaxed" }
-  ]
+  "message": "Registration successful.",
+  "user": {
+    "id": "user_id",
+    "name": "Test User",
+    "email": "test@example.com",
+    "role": "USER"
+  },
+  "accessToken": "jwt_token"
 }
 ```
 
-The full mood list is:
+## POST /api/auth/login
 
-- Happy
-- Sad
-- Relaxed
-- Focused
-- Angry
-- Motivated
-- Romantic
-- Energetic
-- Stressed
-- Sleepy
+Authenticates a user and returns a JWT. Invalid credentials return `UNAUTHORIZED` without revealing whether the email or password was wrong.
+
+### Request
+
+```json
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+```
+
+## GET /api/auth/me
+
+Protected. Returns the current authenticated user.
+
+## POST /api/auth/logout
+
+Returns success for stateless JWT logout. The frontend removes the local token and user.
+
+## GET /api/moods
+
+Returns the 10 supported moods for the frontend.
+
+## POST /api/moods/favorites
+
+Protected. Saves a mood as a favorite for the current user.
+
+### Request
+
+```json
+{
+  "mood": "happy"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Favorite mood saved.",
+  "favorite": {
+    "id": "favorite_id",
+    "mood": {
+      "id": "mood_id",
+      "key": "happy",
+      "name": "Happy",
+      "description": "Bright and upbeat mood for feel-good listening.",
+      "theme": {}
+    },
+    "createdAt": "2026-07-04T00:00:00.000Z"
+  }
+}
+```
+
+Saving the same mood twice is idempotent.
+
+## GET /api/moods/favorites
+
+Protected. Returns the current user's saved favorite moods.
+
+## DELETE /api/moods/favorites/:id
+
+Protected. Removes only the current user's favorite mood record.
 
 ## POST /api/playlists/generate
 
-Generates playlist recommendations for a supported mood. The backend uses Spotify when credentials are configured and returns fallback demo suggestions when Spotify is not configured or unavailable.
+Generates playlist recommendations for a supported mood. Guests can use this endpoint. Authenticated users automatically get a playlist history record after successful generation.
 
 ### Request
 
@@ -79,15 +158,6 @@ Generates playlist recommendations for a supported mood. The backend uses Spotif
   "limit": 8
 }
 ```
-
-### Rules
-
-- `mood` is required.
-- `source` is optional and defaults to `spotify`.
-- Supported sources: `spotify`, `fallback`.
-- `limit` is optional and defaults to `PLAYLIST_DEFAULT_LIMIT` or `8`.
-- `limit` must be between `1` and `20`.
-- `mood` must be one of the supported mood ids.
 
 ### Success Response
 
@@ -125,18 +195,7 @@ Generates playlist recommendations for a supported mood. The backend uses Spotif
   "mood": "happy",
   "query": "feel good music",
   "source": "fallback",
-  "playlists": [
-    {
-      "id": "fallback-happy-1",
-      "title": "Happy Starter Mix",
-      "description": "Bright songs for a lifted, sunny mood. Demo playlist based on feel good music and pop cues.",
-      "imageUrl": "data:image/svg+xml;charset=UTF-8,...",
-      "externalUrl": "https://open.spotify.com/search/feel%20good%20music",
-      "trackCount": 20,
-      "source": "fallback",
-      "mood": "happy"
-    }
-  ],
+  "playlists": [],
   "meta": {
     "cached": false,
     "fallbackUsed": true,
@@ -146,55 +205,53 @@ Generates playlist recommendations for a supported mood. The backend uses Spotif
 }
 ```
 
-### Invalid Mood Example
-
-```json
-{
-  "success": false,
-  "message": "Invalid mood selected.",
-  "errorCode": "INVALID_MOOD"
-}
-```
-
-### Invalid Input Example
-
-```json
-{
-  "success": false,
-  "message": "Invalid playlist generation request.",
-  "errorCode": "INVALID_INPUT"
-}
-```
-
 ## POST /api/playlists/regenerate
 
-Regenerates playlist recommendations using the same request shape as `/api/playlists/generate`. The service attempts to rotate to a different mood query where possible.
+Uses the same request and response shape as generate. Authenticated regenerate requests are also saved to playlist history.
 
-### Request
+## GET /api/playlists/history
 
-```json
-{
-  "mood": "happy",
-  "source": "spotify",
-  "limit": 8
-}
-```
+Protected. Returns paginated playlist generation history for the current user.
+
+### Query Params
+
+- `page`: default `1`
+- `limit`: default `10`
 
 ### Response
 
-The response shape is the same as `/api/playlists/generate`.
-
-## Phase 3 Frontend API Usage
-
-The frontend uses `frontend/src/services/playlistService.ts` to call:
-
-- `POST /api/playlists/generate`
-- `POST /api/playlists/regenerate`
-
-If the backend is offline, the frontend falls back to local playlist data and shows:
-
-```text
-Using local playlist data. Backend is not connected.
+```json
+{
+  "success": true,
+  "items": [
+    {
+      "id": "history_id",
+      "mood": "happy",
+      "inputType": "manual",
+      "journalTextSaved": false,
+      "searchQuery": "happy hits",
+      "apiSource": "spotify",
+      "resultData": {},
+      "createdAt": "2026-07-04T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
+  }
+}
 ```
 
-No Spotify credentials are exposed to the frontend.
+## DELETE /api/playlists/history/:id
+
+Protected. Deletes one history item owned by the current user.
+
+## DELETE /api/playlists/history
+
+Protected. Clears all playlist history for the current user only.
+
+## Frontend API Behavior
+
+The frontend prefers backend responses. If the backend is offline, mood and playlist flows fall back to local demo data and show a non-blocking message. Authenticated saving, favorites, and history require the backend and database to be running.

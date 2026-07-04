@@ -33,23 +33,31 @@
 - Preserved frontend local fallback when the backend is offline.
 - Updated documentation for setup, API usage, and limitations.
 
-## Phase 4: Authentication and Database Features
+## Phase 4: Authentication and Database Features - Completed
 
-- Implement registration and login.
-- Add password hashing, JWT issuance, and protected routes.
-- Persist users, favorite moods, and playlist history through Prisma.
+- Updated Prisma models for users, moods, favorite moods, playlist history, shared playlists, and API logs.
+- Added an idempotent seed script for the 10 supported moods.
+- Added JWT Bearer authentication with register, login, current-user, and logout endpoints.
+- Added password hashing and safe user responses that never expose `passwordHash`.
+- Added protected favorite mood endpoints.
+- Added protected playlist history endpoints with pagination and delete/clear actions.
+- Preserved guest playlist generation.
+- Added optional authentication to playlist generation so logged-in users automatically save history.
+- Connected frontend login, register, navbar session state, dashboard, favorites, history, and authenticated generate/regenerate flows.
+- Preserved frontend offline fallback behavior for guest demo usage.
 
 ## Phase 5: Journal Mood Detection
 
 - Add journal text mood detection.
 - Map detected moods to playlist search criteria.
 - Add validation and privacy-aware handling of journal text.
+- Keep journal text private by default unless explicit persistence is introduced later.
 
-## Phase 6: Sharing and Dashboard
+## Phase 6: Sharing and Dashboard Enhancements
 
-- Add shared playlist links.
-- Add user dashboard views.
-- Add favorite moods and playlist history management.
+- Add real shared playlist links.
+- Expand dashboard views and management tools.
+- Add favorite moods and playlist history refinements.
 
 ## Phase 7: Testing and Deployment
 

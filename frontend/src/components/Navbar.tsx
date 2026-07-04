@@ -1,16 +1,30 @@
-﻿import { NavLink } from "react-router-dom";
+﻿import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { useMoodTheme } from "../hooks/useMoodTheme";
 
-const links = [
+const guestLinks = [
   { label: "Home", to: "/" },
   { label: "Results", to: "/results" },
-  { label: "Dashboard", to: "/dashboard" },
   { label: "Login", to: "/login" },
   { label: "Register", to: "/register" }
 ];
 
+const userLinks = [
+  { label: "Home", to: "/" },
+  { label: "Results", to: "/results" },
+  { label: "Dashboard", to: "/dashboard" }
+];
+
 export function Navbar() {
+  const navigate = useNavigate();
   const { selectedMood, theme } = useMoodTheme();
+  const { isAuthenticated, user, logout } = useAuth();
+  const links = isAuthenticated ? userLinks : guestLinks;
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl">
@@ -31,6 +45,11 @@ export function Navbar() {
               {selectedMood.emoji} {selectedMood.name}
             </span>
           ) : null}
+          {isAuthenticated && user ? (
+            <span className="rounded-full bg-white/75 px-3 py-1.5 font-semibold text-slate-700">
+              {user.name}
+            </span>
+          ) : null}
           {links.map((link) => (
             <NavLink
               key={link.to}
@@ -44,6 +63,15 @@ export function Navbar() {
               {link.label}
             </NavLink>
           ))}
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-full px-3 py-1.5 transition hover:bg-white/70 hover:text-slate-950"
+            >
+              Logout
+            </button>
+          ) : null}
         </div>
       </nav>
     </header>

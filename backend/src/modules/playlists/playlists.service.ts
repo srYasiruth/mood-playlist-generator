@@ -1,4 +1,5 @@
-﻿import { env } from "../../config/env";
+﻿import { prisma } from "../../config/database";
+import { env } from "../../config/env";
 import {
   searchPlaylists,
   SpotifyApiError,
@@ -6,7 +7,12 @@ import {
 } from "../../integrations/spotify.service";
 import { logger } from "../../utils/logger";
 import { getMoodDefinition, selectMoodQuery } from "../../utils/moodMapping";
-import { PlaylistApiError, type PlaylistGenerationRequest, type PlaylistGenerationResponse, type PlaylistItem } from "./playlists.types";
+import {
+  PlaylistApiError,
+  type PlaylistGenerationRequest,
+  type PlaylistGenerationResponse,
+  type PlaylistItem
+} from "./playlists.types";
 
 type CacheEntry = {
   expiresAt: number;
@@ -190,4 +196,57 @@ export async function generatePlaylists(request: PlaylistGenerationRequest, opti
     setCachedResponse(key, fallback);
     return fallback;
   }
+}
+
+export async function savePlaylistHistory(userId: string, response: PlaylistGenerationResponse) {
+  return prisma.playlistHistory.create({
+    data: {
+      userId,
+      mood: response.mood,
+      inputType: "manual",
+      journalTextSaved: false,
+      searchQuery: response.query,
+      apiSource: response.source,
+      resultData: response
+    }
+  });
+}
+
+export async function getPlaylistHistory(userId: string, page = 1, limit = 10) {
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.min(50, Math.max(1, limit));
+  const skip = (safePage - 1) * safeLimit;
+
+  const [items, total] = await Promise.all([
+    prisma.playlistHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: safeLimit
+    }),
+    prisma.playlistHistory.count({ where: { userId } })
+  ]);
+
+  return {
+    items,
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / safeLimit))
+    }
+  };
+}
+
+export async function deletePlaylistHistoryItem(userId: string, historyId: string) {
+  const item = await prisma.playlistHistory.findUnique({ where: { id: historyId } });
+  if (!item || item.userId !== userId) {
+    throw new PlaylistApiError("Playlist history item not found.", "NOT_FOUND", 404);
+  }
+
+  await prisma.playlistHistory.delete({ where: { id: historyId } });
+}
+
+export async function clearPlaylistHistory(userId: string) {
+  await prisma.playlistHistory.deleteMany({ where: { userId } });
 }
