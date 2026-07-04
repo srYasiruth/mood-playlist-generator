@@ -28,6 +28,7 @@ export type PlaylistGenerationResponse = {
   source: string;
   playlists: Playlist[];
   inputType?: PlaylistInputType;
+  historyId?: string;
   meta?: {
     cached?: boolean;
     fallbackUsed?: boolean;

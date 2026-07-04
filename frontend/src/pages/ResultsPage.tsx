@@ -9,6 +9,7 @@ import { PlaylistCard } from "../components/PlaylistCard";
 import { useAuth } from "../hooks/useAuth";
 import { useMoodTheme } from "../hooks/useMoodTheme";
 import { usePlaylistMock } from "../hooks/usePlaylistMock";
+import { createShareLink } from "../services/shareService";
 import { saveFavoriteMood } from "../services/userService";
 import type { Mood } from "../types/mood";
 import type { Playlist, PlaylistGenerationResponse, PlaylistInputType } from "../types/playlist";
@@ -20,6 +21,14 @@ type ResultsLocationState = {
   inputType?: PlaylistInputType;
 };
 
+async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return true;
+  }
+  return false;
+}
+
 export function ResultsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,6 +36,9 @@ export function ResultsPage() {
   const { selectedMood, setSelectedMood, theme } = useMoodTheme();
   const { isAuthenticated } = useAuth();
   const [favoriteMessage, setFavoriteMessage] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const [inputType, setInputType] = useState<PlaylistInputType>(routeState?.inputType ?? routeState?.playlistResponse?.inputType ?? "manual");
   const {
     playlists,
@@ -68,7 +80,11 @@ export function ResultsPage() {
 
   const handleRegenerate = async () => {
     if (activeMood) {
-      await regenerate(activeMood, inputType);
+      const response = await regenerate(activeMood, inputType);
+      if (response?.historyId) {
+        setShareUrl(null);
+        setShareMessage(null);
+      }
     }
   };
 
@@ -87,6 +103,37 @@ export function ResultsPage() {
       setFavoriteMessage(`${activeMood.name} saved to your favorite moods.`);
     } catch {
       setFavoriteMessage("Could not save this favorite mood. Please try again.");
+    }
+  };
+
+  const handleShare = async () => {
+    setShareMessage(null);
+    if (!isAuthenticated) {
+      setShareMessage("Please log in to create shareable links.");
+      return;
+    }
+
+    const historyId = lastResponse?.historyId;
+    if (!historyId) {
+      setShareMessage("Generate a playlist while logged in before creating a share link.");
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      const share = await createShareLink(historyId);
+      if (share.shareUrl) {
+        setShareUrl(share.shareUrl);
+        const copied = await copyText(share.shareUrl);
+        setShareMessage(copied ? "Share link copied." : "Share link created. Copy it below.");
+      } else {
+        setShareUrl(share.shareId);
+        setShareMessage("Share link created. Copy the share id below.");
+      }
+    } catch {
+      setShareMessage("Could not create a share link. Please try again.");
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -121,6 +168,9 @@ export function ResultsPage() {
             <Button onClick={handleRegenerate} disabled={isLoading}>
               {isLoading ? "Regenerating..." : "Regenerate"}
             </Button>
+            <Button onClick={handleShare} disabled={isSharing} variant="secondary">
+              {isSharing ? "Sharing..." : "Share"}
+            </Button>
             <Button onClick={() => navigate("/")} variant="secondary">
               Back to Home
             </Button>
@@ -133,6 +183,19 @@ export function ResultsPage() {
 
       {statusMessage ? <StatusBanner message={statusMessage} /> : null}
       {favoriteMessage ? <StatusBanner message={favoriteMessage} tone={isAuthenticated ? "info" : "warning"} /> : null}
+      {shareMessage ? <StatusBanner message={shareMessage} tone={isAuthenticated ? "info" : "warning"} /> : null}
+      {shareUrl ? (
+        <div className="rounded-xl border border-white/60 bg-white/78 p-4 shadow-sm backdrop-blur">
+          <label htmlFor="share-url" className="text-sm font-bold text-slate-950">Share URL</label>
+          <input
+            id="share-url"
+            readOnly
+            value={shareUrl}
+            className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+            onFocus={(event) => event.target.select()}
+          />
+        </div>
+      ) : null}
       {error ? <ErrorState message={error} onRetry={handleRegenerate} /> : null}
       {isLoading ? <LoadingState /> : null}
       {!isLoading && playlists.length === 0 ? (

@@ -4,7 +4,7 @@ A full-stack web application for recommending playlists based on a user's mood. 
 
 ## Current Phase
 
-Phase 5 - Journal Mood Detection
+Phase 6 - Sharing and Dashboard Analytics
 
 Implemented so far:
 
@@ -20,8 +20,14 @@ Implemented so far:
 - Rule-based journal mood detection for the 10 supported moods
 - Journal detection result UI with confidence, reason, matched signals, and generate action
 - Text-based playlist generations saved with `inputType: "text"` for authenticated users
+- Authenticated shareable playlist links
+- Public shared playlist pages that hide private account data
+- Dashboard analytics for generation totals, favorite moods, recent history, and active shares
+- Authenticated shareable playlist links
+- Public shared playlist pages that hide private account data
+- Dashboard analytics for generation totals, favorite moods, recent history, and active shares
 
-Not implemented yet: external/AI sentiment analysis, Spotify user OAuth, saving playlists to a user's Spotify account, real sharing links, dashboard analytics, or deployment.
+Not implemented yet: external/AI sentiment analysis, Spotify user OAuth, saving playlists to a user's Spotify account, advanced dashboard analytics, or deployment.
 
 ## Tech Stack
 
@@ -142,6 +148,7 @@ Public:
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `POST /api/moods/detect`
+- `GET /api/share/:shareId`
 - `POST /api/playlists/generate`
 - `POST /api/playlists/regenerate`
 
@@ -154,6 +161,9 @@ Protected with `Authorization: Bearer <token>`:
 - `GET /api/playlists/history`
 - `DELETE /api/playlists/history/:id`
 - `DELETE /api/playlists/history`
+- `GET /api/users/dashboard`
+- `POST /api/share`
+- `DELETE /api/share/:shareId`
 
 Playlist generation still works for guests. When a valid JWT is sent, successful generate/regenerate requests are saved to playlist history. Manual mood card generations save `inputType: "manual"`; journal-detected generations save `inputType: "text"` and never store the original journal text.
 
@@ -177,6 +187,19 @@ Example request:
 }
 ``` 
 
+
+## Sharing And Dashboard
+
+Authenticated users can create share links for their own playlist history items. Public shared playlist pages use:
+
+```text
+http://localhost:5173/share/<shareId>
+```
+
+The backend builds share URLs from `FRONTEND_URL`. Public share responses include playlist result data, mood, source, query, and dates only. They do not expose user email, user name, JWT data, internal database ids, or journal text.
+
+Dashboard analytics are available at `GET /api/users/dashboard` and power the frontend dashboard cards, mood counts, favorite shortcuts, recent history actions, and active share management.
+
 ## Current Limitations
 
 - Spotify user OAuth is not implemented.
@@ -187,5 +210,4 @@ Example request:
 
 ## Future Roadmap
 
-- Phase 6: Sharing and Dashboard Enhancements
 - Phase 7: Testing and Deployment

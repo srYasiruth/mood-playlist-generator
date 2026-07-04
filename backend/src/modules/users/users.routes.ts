@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { usersPlaceholder } from "./users.controller";
+import { requireAuth } from "../../middleware/auth.middleware";
+import { getDashboardController } from "./users.controller";
 
 export const usersRouter = Router();
 
-usersRouter.all("*", usersPlaceholder);
-
+usersRouter.get("/dashboard", requireAuth, getDashboardController);

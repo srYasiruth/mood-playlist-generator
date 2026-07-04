@@ -303,8 +303,103 @@ Protected. Deletes one history item owned by the current user.
 
 Protected. Clears all playlist history for the current user only.
 
+
+## POST /api/share
+
+Protected. Creates or returns an existing active share link for a playlist history item owned by the authenticated user.
+
+### Request
+
+```json
+{
+  "playlistHistoryId": "history_id"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "shareId": "secure_random_share_id",
+  "shareUrl": "http://localhost:5173/share/secure_random_share_id",
+  "message": "Share link created successfully."
+}
+```
+
+Rules:
+
+- Requires `Authorization: Bearer <token>`.
+- The playlist history item must belong to the authenticated user.
+- Existing active share links for the same history item are reused.
+- Share ids are generated with crypto-safe randomness.
+
+## GET /api/share/:shareId
+
+Public. Returns a sanitized shared playlist payload. Authentication is not required.
+
+### Response
+
+```json
+{
+  "success": true,
+  "sharedPlaylist": {
+    "shareId": "secure_random_share_id",
+    "mood": "happy",
+    "inputType": "manual",
+    "source": "spotify",
+    "query": "happy hits",
+    "createdAt": "2026-07-04T00:00:00.000Z",
+    "playlists": []
+  }
+}
+```
+
+Privacy: this response does not include user email, user name, JWT data, `userId`, `playlistHistoryId`, password hashes, or journal text.
+
+## DELETE /api/share/:shareId
+
+Protected. Soft-disables a share link owned by the authenticated user.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Share link disabled successfully."
+}
+```
+
+Inactive or disabled links return `NOT_FOUND` from the public endpoint.
+
+## GET /api/users/dashboard
+
+Protected. Returns compact dashboard analytics for the current user only.
+
+### Response
+
+```json
+{
+  "success": true,
+  "stats": {
+    "totalPlaylistsGenerated": 12,
+    "manualGenerations": 7,
+    "textGenerations": 5,
+    "favoriteMoodCount": 3,
+    "sharedPlaylistCount": 2,
+    "mostSelectedMood": "focused",
+    "moodCounts": [
+      { "mood": "focused", "count": 4 }
+    ],
+    "recentHistory": [],
+    "favoriteMoods": [],
+    "activeShares": []
+  }
+}
+```
+
 ## Frontend API Behavior
 
-The frontend prefers backend responses. If the backend is offline, mood and playlist flows fall back to local demo data and show a non-blocking message. Journal mood detection requires the backend because it runs on the server. Authenticated saving, favorites, and history require the backend and database to be running.
+The frontend prefers backend responses. If the backend is offline, mood and playlist flows fall back to local demo data and show a non-blocking message. Journal mood detection requires the backend because it runs on the server. Authenticated saving, favorites, history, dashboard analytics, and share creation require the backend and database to be running. Public shared playlist pages do not require authentication.
 
 Privacy: the full journal text is not stored in `PlaylistHistory`, `ApiLog`, or playlist result snapshots. Authenticated text-based generations save only `inputType: "text"`, `journalTextSaved: false`, mood, query, source, and normalized playlist result data.

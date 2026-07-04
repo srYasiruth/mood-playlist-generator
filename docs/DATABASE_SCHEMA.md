@@ -84,13 +84,13 @@ Guest playlist generation does not create history records. Journal-based generat
 
 ## SharedPlaylist
 
-Prepared for later sharing features. Real sharing is not implemented in Phase 4.
+Stores active and disabled public playlist share links. Real sharing is implemented in Phase 6 using soft-disable behavior.
 
 - `id`: UUID primary key
-- `shareId`: unique public share identifier
+- `shareId`: unique crypto-random public share identifier
 - `userId`: optional owner user id
 - `playlistHistoryId`: optional playlist history id
-- `isActive`: defaults to `true`
+- `isActive`: defaults to `true`; disabled links are soft-disabled with `false`
 - `createdAt`: creation timestamp
 - `expiresAt`: optional expiration timestamp
 
@@ -105,3 +105,11 @@ Prepared for later provider logging or admin monitoring.
 - `success`: whether the request succeeded
 - `errorMessage`: optional failure message
 - `createdAt`: creation timestamp
+
+## Phase 6 Migration Status
+
+No Phase 6 Prisma migration was required because `SharedPlaylist` already had the needed fields and relations.
+
+## Phase 6 Migration Status
+
+No Phase 6 Prisma migration was required because `SharedPlaylist` already had the needed fields and relations.

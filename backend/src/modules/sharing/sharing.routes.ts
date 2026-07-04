@@ -1,7 +1,10 @@
 import { Router } from "express";
-import { sharingPlaceholder } from "./sharing.controller";
+import { requireAuth } from "../../middleware/auth.middleware";
+import { publicShareRateLimiter, shareCreationRateLimiter } from "../../middleware/rateLimit.middleware";
+import { createShareController, disableShareController, getSharedPlaylistController } from "./sharing.controller";
 
 export const sharingRouter = Router();
 
-sharingRouter.all("*", sharingPlaceholder);
-
+sharingRouter.post("/", shareCreationRateLimiter, requireAuth, createShareController);
+sharingRouter.get("/:shareId", publicShareRateLimiter, getSharedPlaylistController);
+sharingRouter.delete("/:shareId", requireAuth, disableShareController);

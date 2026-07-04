@@ -1,4 +1,4 @@
-﻿import type { Response } from "express";
+import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../middleware/auth.middleware";
 import { logger } from "../../utils/logger";
 import {
@@ -27,15 +27,17 @@ function sendPlaylistError(res: Response, error: unknown) {
   });
 }
 
-async function saveHistoryIfAuthenticated(userId: string | undefined, response: PlaylistGenerationResponse) {
+async function attachHistoryIfAuthenticated(userId: string | undefined, response: PlaylistGenerationResponse) {
   if (!userId) {
-    return;
+    return response;
   }
 
   try {
-    await savePlaylistHistory(userId, response);
+    const history = await savePlaylistHistory(userId, response);
+    return { ...response, historyId: history.id };
   } catch (error) {
     logger.error(error instanceof Error ? error.message : "Failed to save playlist history.");
+    return response;
   }
 }
 
@@ -43,8 +45,8 @@ export async function generatePlaylistsController(req: AuthenticatedRequest, res
   try {
     const request = validatePlaylistRequest(req.body);
     const response = await generatePlaylists(request);
-    await saveHistoryIfAuthenticated(req.authUser?.userId, response);
-    return res.json(response);
+    const responseWithHistory = await attachHistoryIfAuthenticated(req.authUser?.userId, response);
+    return res.json(responseWithHistory);
   } catch (error) {
     return sendPlaylistError(res, error);
   }
@@ -54,8 +56,8 @@ export async function regeneratePlaylistsController(req: AuthenticatedRequest, r
   try {
     const request = validatePlaylistRequest(req.body);
     const response = await generatePlaylists(request, { regenerate: true });
-    await saveHistoryIfAuthenticated(req.authUser?.userId, response);
-    return res.json(response);
+    const responseWithHistory = await attachHistoryIfAuthenticated(req.authUser?.userId, response);
+    return res.json(responseWithHistory);
   } catch (error) {
     return sendPlaylistError(res, error);
   }

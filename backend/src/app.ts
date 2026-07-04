@@ -32,6 +32,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/moods", moodsRouter);
 app.use("/api/playlists", playlistsRouter);
+app.use("/api/share", sharingRouter);
 app.use("/api/sharing", sharingRouter);
 app.use("/api/users", usersRouter);
 
@@ -43,4 +44,3 @@ app.use((_req, res) => {
 });
 
 app.use(errorMiddleware);
-
