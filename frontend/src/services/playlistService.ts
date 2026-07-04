@@ -1,14 +1,15 @@
-﻿import type { Mood } from "../types/mood";
-import type { Playlist } from "../types/playlist";
+﻿import { AxiosError } from "axios";
+import type { Mood } from "../types/mood";
+import type { Playlist, PlaylistGenerationResponse } from "../types/playlist";
+import { apiClient } from "./apiClient";
 
-const playlistMoods = [
-  "First Spark",
-  "Deep Current",
-  "Late Night Signal",
-  "Open Window"
-];
+const playlistMoods = ["First Spark", "Deep Current", "Late Night Signal", "Open Window"];
+const sourceCycle: Playlist["source"][] = ["fallback", "fallback", "mock", "fallback"];
 
-const providerCycle: Playlist["provider"][] = ["Spotify", "Spotify", "YouTube", "Mock"];
+export type PlaylistCatalogResult = PlaylistGenerationResponse & {
+  usingLocalFallback?: boolean;
+  message?: string;
+};
 
 function buildTrackTitles(mood: Mood, playlistIndex: number) {
   const keyword = mood.keywords[playlistIndex % mood.keywords.length] ?? mood.name;
@@ -19,24 +20,76 @@ function buildTrackTitles(mood: Mood, playlistIndex: number) {
   ];
 }
 
-export async function generateMockPlaylists(mood: Mood): Promise<Playlist[]> {
-  await new Promise((resolve) => window.setTimeout(resolve, 900));
-
-  return playlistMoods.map((label, index) => ({
-    id: `${mood.id}-${index + 1}`,
+function localMockResponse(mood: Mood, message: string): PlaylistCatalogResult {
+  const playlists = playlistMoods.map((label, index) => ({
+    id: `local-${mood.id}-${index + 1}`,
     title: `${mood.name} ${label}`,
     description: `A ${mood.description.toLowerCase()} Built from ${mood.keywords
       .slice(0, 3)
       .join(", ")} mood cues.`,
-    provider: providerCycle[index],
+    source: sourceCycle[index],
     externalUrl: "#",
     coverGradient: mood.theme.coverGradient,
     trackCount: 18 + index * 7,
-    moodTag: mood.name,
+    mood: mood.id,
     tracks: buildTrackTitles(mood, index).map((title, trackIndex) => ({
       id: `${mood.id}-${index + 1}-${trackIndex + 1}`,
       title,
-      artist: "Mock Mix Studio"
+      artist: "Local Demo Mix"
     }))
   }));
+
+  return {
+    success: true,
+    mood: mood.id,
+    query: mood.keywords[0] ?? mood.name,
+    source: "fallback",
+    playlists,
+    meta: {
+      cached: false,
+      fallbackUsed: true,
+      generatedAt: new Date().toISOString(),
+      message
+    },
+    usingLocalFallback: true,
+    message
+  };
+}
+
+async function requestPlaylists(path: "/api/playlists/generate" | "/api/playlists/regenerate", mood: Mood, limit: number) {
+  const response = await apiClient.post<PlaylistGenerationResponse>(
+    path,
+    {
+      mood: mood.id,
+      source: "spotify",
+      limit
+    },
+    { timeout: 8000 }
+  );
+
+  return response.data;
+}
+
+export async function generatePlaylists(mood: Mood, limit = 8): Promise<PlaylistCatalogResult> {
+  try {
+    return await requestPlaylists("/api/playlists/generate", mood, limit);
+  } catch (error) {
+    const isNetworkIssue = error instanceof AxiosError && !error.response;
+    if (isNetworkIssue) {
+      return localMockResponse(mood, "Using local playlist data. Backend is not connected.");
+    }
+    throw error;
+  }
+}
+
+export async function regeneratePlaylists(mood: Mood, limit = 8): Promise<PlaylistCatalogResult> {
+  try {
+    return await requestPlaylists("/api/playlists/regenerate", mood, limit);
+  } catch (error) {
+    const isNetworkIssue = error instanceof AxiosError && !error.response;
+    if (isNetworkIssue) {
+      return localMockResponse(mood, "Using local playlist data. Backend is not connected.");
+    }
+    throw error;
+  }
 }

@@ -1,36 +1,35 @@
 ﻿# Mood-Based Playlist Generator
 
-A full-stack web application foundation for recommending music playlists based on a user's mood. The current version includes a polished Phase 2 frontend experience with selectable moods, dynamic themes, journal-input placeholder UI, and mock playlist recommendations.
+A full-stack web application for recommending playlists based on a user's mood. The current version includes a polished frontend mood experience and a backend playlist generation API that can use Spotify Web API when credentials are configured, with safe demo fallbacks for local development.
 
 ## Current Phase
 
-Phase 2 - Core Frontend UI
+Phase 3 - Backend Playlist Generation API
 
-This phase builds the MVP-style frontend experience. It does not implement authentication, real Spotify or YouTube calls, database persistence, journal sentiment analysis, dashboard analytics, sharing behavior, or deployment.
+Implemented in this phase:
+
+- `POST /api/playlists/generate`
+- `POST /api/playlists/regenerate`
+- Server-side trusted mood-to-query mapping
+- Spotify Client Credentials integration on the backend only
+- Spotify access-token caching
+- Playlist response normalization
+- Mood-specific backend fallback playlists
+- In-memory playlist response cache
+- Endpoint validation and rate limiting
+- Frontend connection to the real backend endpoint
+- Frontend fallback when backend is offline
+
+Not implemented in this phase: authentication, JWT, database persistence, playlist history, favorite moods, real sharing, journal sentiment analysis, Spotify user OAuth, or saving playlists to a user's Spotify account.
 
 ## Tech Stack
 
 - Frontend: React, TypeScript, Vite, Tailwind CSS, React Router, Axios
-- Backend: Node.js, Express.js, TypeScript, REST API structure
-- Database: PostgreSQL planned for production, Prisma ORM
-- Future music API: Spotify Web API first, YouTube Data API as fallback
-
-## Folder Structure
-
-```text
-Mood-Based Playlist Generator/
-  frontend/
-  backend/
-  docs/
-  .gitignore
-  README.md
-  LICENSE
-  package.json
-```
+- Backend: Node.js, Express.js, TypeScript
+- Database: PostgreSQL planned for production, Prisma ORM schema already exists
+- Music API: Spotify Web API through backend server-side credentials
 
 ## Install Dependencies
-
-From the project root:
 
 ```powershell
 cd "D:\PROJECTS\Mood-Based Playlist Generator"
@@ -39,7 +38,7 @@ npm.cmd install
 
 ## Environment Variables
 
-Create local environment files from the examples:
+Create local environment files from examples:
 
 ```powershell
 Copy-Item frontend\.env.example frontend\.env
@@ -48,14 +47,29 @@ Copy-Item backend\.env.example backend\.env
 
 Never commit real `.env` files. Only `.env.example` files belong in the repository.
 
-## Run Frontend
+## Spotify Setup
 
-```powershell
-cd "D:\PROJECTS\Mood-Based Playlist Generator"
-npm.cmd run dev --workspace frontend
+Spotify credentials are optional for local development. If they are missing, the backend returns mood-specific demo playlist suggestions with `meta.fallbackUsed = true`.
+
+To use real Spotify playlist search:
+
+1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Log in with a Spotify account.
+3. Click **Create app**.
+4. Enter an app name and description.
+5. Add any valid redirect URI for now, such as `http://localhost:5173`, even though Phase 3 does not use user OAuth.
+6. Save the app.
+7. Open the app settings.
+8. Copy the **Client ID**.
+9. Click to reveal/copy the **Client Secret**.
+10. Paste them into `backend/.env`:
+
+```env
+SPOTIFY_CLIENT_ID=your_client_id_here
+SPOTIFY_CLIENT_SECRET=your_client_secret_here
 ```
 
-Default local URL: `http://localhost:5173`
+Do not put Spotify credentials in `frontend/.env` or frontend source code.
 
 ## Run Backend
 
@@ -64,63 +78,55 @@ cd "D:\PROJECTS\Mood-Based Playlist Generator"
 npm.cmd run dev --workspace backend
 ```
 
-Default local URL: `http://localhost:5000`
+Default backend URL: `http://localhost:5000`
 
-## Phase 2 Frontend Features
-
-- Professional responsive home page
-- Mood selection using 10 supported moods
-- Dynamic theme/background changes based on selected mood
-- Journal text input UI placeholder for Phase 5
-- Generate button disabled until a mood is selected
-- Mock playlist generation with loading state
-- Results page with playlist cards and regenerate action
-- Empty and error states
-- Backend mood loading through `/api/moods`
-- Graceful local fallback when backend is offline
-- Consistent placeholder styling for login, register, dashboard, and shared playlist pages
-
-## Phase 1 API Endpoints
-
-- `GET /api/health`
-- `GET /api/moods`
-
-## Prisma Setup
-
-The Prisma schema is configured for PostgreSQL in `backend/prisma/schema.prisma`.
-
-Generate the Prisma client:
-
-```powershell
-cd "D:\PROJECTS\Mood-Based Playlist Generator\backend"
-npm.cmd run prisma:generate
-```
-
-Run a migration after configuring a real PostgreSQL `DATABASE_URL`:
-
-```powershell
-npm.cmd run prisma:migrate
-```
-
-Free PostgreSQL options for later:
-
-- Supabase PostgreSQL
-- Neon PostgreSQL
-- Local PostgreSQL
-
-Paste the connection string into `backend/.env` as `DATABASE_URL`. Do not paste credentials into source files.
-
-## Validation Commands
+## Run Frontend
 
 ```powershell
 cd "D:\PROJECTS\Mood-Based Playlist Generator"
-npm.cmd run build --workspace frontend
-npm.cmd run build --workspace backend
+npm.cmd run dev --workspace frontend
 ```
+
+Default frontend URL: `http://localhost:5173`
+
+## Current API Endpoints
+
+- `GET /api/health`
+- `GET /api/moods`
+- `POST /api/playlists/generate`
+- `POST /api/playlists/regenerate`
+
+Example playlist request:
+
+```json
+{
+  "mood": "focused",
+  "source": "spotify",
+  "limit": 8
+}
+```
+
+If Spotify credentials are configured, the backend searches Spotify playlists. If credentials are missing or Spotify is unavailable, the backend returns safe demo playlist suggestions.
+
+## Build Checks
+
+```powershell
+cd "D:\PROJECTS\Mood-Based Playlist Generator"
+npm.cmd run build --workspace backend
+npm.cmd run build --workspace frontend
+```
+
+## Current Limitations
+
+- Spotify user OAuth is not implemented.
+- The app cannot save playlists to a Spotify account.
+- Playlist history is not persisted to PostgreSQL yet.
+- Journal mood detection remains a UI placeholder.
+- Sharing and dashboard features remain placeholders.
+- Spotify platform access can vary by app mode and Spotify policy; fallback suggestions keep the app usable during development.
 
 ## Future Roadmap
 
-- Phase 3: Backend API and Music API Integration
 - Phase 4: Authentication and Database Features
 - Phase 5: Journal Mood Detection
 - Phase 6: Sharing and Dashboard

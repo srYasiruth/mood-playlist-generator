@@ -1,14 +1,15 @@
-﻿export type PlaylistSource = "Spotify" | "YouTube" | "Mock";
+﻿export type PlaylistSource = "spotify" | "youtube" | "fallback" | "mock" | string;
 
 export type Playlist = {
   id: string;
   title: string;
-  description: string;
-  provider: PlaylistSource;
+  description?: string;
+  imageUrl?: string;
   externalUrl: string;
-  coverGradient: string;
-  trackCount: number;
-  moodTag: string;
+  trackCount?: number;
+  source: PlaylistSource;
+  mood: string;
+  coverGradient?: string;
   tracks?: PlaylistTrack[];
 };
 
@@ -17,4 +18,18 @@ export type PlaylistTrack = {
   title: string;
   artist: string;
   durationMs?: number;
+};
+
+export type PlaylistGenerationResponse = {
+  success: boolean;
+  mood: string;
+  query: string;
+  source: string;
+  playlists: Playlist[];
+  meta?: {
+    cached?: boolean;
+    fallbackUsed?: boolean;
+    generatedAt?: string;
+    message?: string;
+  };
 };

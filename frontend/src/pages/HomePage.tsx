@@ -15,7 +15,7 @@ import type { Mood } from "../types/mood";
 export function HomePage() {
   const navigate = useNavigate();
   const { selectedMood, setSelectedMood, theme } = useMoodTheme();
-  const { isLoading, error, generate } = usePlaylistMock();
+  const { isLoading, error, statusMessage, generate } = usePlaylistMock();
   const [moods, setMoods] = useState<Mood[]>([]);
   const [isLoadingMoods, setIsLoadingMoods] = useState(true);
   const [catalogMessage, setCatalogMessage] = useState<string | null>(null);
@@ -50,9 +50,15 @@ export function HomePage() {
       return;
     }
 
-    const generatedPlaylists = await generate(selectedMood);
-    if (generatedPlaylists.length > 0) {
-      navigate("/results", { state: { mood: selectedMood, playlists: generatedPlaylists } });
+    const response = await generate(selectedMood);
+    if (response?.playlists.length) {
+      navigate("/results", {
+        state: {
+          mood: selectedMood,
+          playlists: response.playlists,
+          playlistResponse: response
+        }
+      });
     }
   };
 
@@ -69,7 +75,7 @@ export function HomePage() {
       <div className="grid gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
         <div className="space-y-6">
           <div className="inline-flex rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur">
-            Phase 2 MVP frontend
+            Phase 3 playlist API connected
           </div>
           <div>
             <p className="text-sm font-semibold uppercase tracking-normal" style={{ color: theme.accent }}>
@@ -79,8 +85,7 @@ export function HomePage() {
               How are you feeling today?
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700 sm:text-lg">
-              Pick a mood and get a set of mock playlist recommendations shaped around the feeling.
-              The real music API connection arrives in a later backend phase.
+              Pick a mood and get playlist recommendations shaped around the feeling. The backend uses Spotify when credentials are configured, with safe demo suggestions otherwise.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -92,6 +97,7 @@ export function HomePage() {
             </Button>
           </div>
           {catalogMessage ? <StatusBanner message={catalogMessage} tone="warning" /> : null}
+          {statusMessage ? <StatusBanner message={statusMessage} /> : null}
           {error ? <ErrorState message={error} onRetry={handleGenerate} /> : null}
         </div>
 
@@ -123,7 +129,7 @@ export function HomePage() {
               Choose a mood
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Only one mood can be active at a time. Each card carries its own theme and mock playlist cues.
+              Only one mood can be active at a time. Each card carries its own theme and playlist cues.
             </p>
           </div>
           {selectedMood ? (

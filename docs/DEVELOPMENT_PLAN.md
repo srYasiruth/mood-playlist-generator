@@ -18,14 +18,20 @@
 - Added responsive results page with playlist cards and regenerate action.
 - Added backend `/api/moods` loading with local fallback when the backend is offline.
 - Refined placeholder login, register, dashboard, and shared playlist pages.
-- Preserved Phase 1 backend scope and did not add real music API calls.
 
-## Phase 3: Backend API and Music API Integration
+## Phase 3: Backend API and Music API Integration - Completed
 
-- Add playlist generation endpoints.
-- Integrate Spotify Web API first.
-- Add YouTube Data API fallback planning or implementation.
-- Add provider logging and error handling.
+- Added `POST /api/playlists/generate`.
+- Added `POST /api/playlists/regenerate`.
+- Added server-side trusted mood-to-query mapping for all 10 moods.
+- Added Spotify Client Credentials integration on the backend.
+- Added Spotify access-token caching and playlist search normalization.
+- Added backend fallback playlist suggestions when Spotify is not configured or unavailable.
+- Added in-memory playlist response caching with TTL.
+- Added playlist request validation and endpoint-specific rate limiting.
+- Connected the frontend Generate and Regenerate flows to the backend playlist API.
+- Preserved frontend local fallback when the backend is offline.
+- Updated documentation for setup, API usage, and limitations.
 
 ## Phase 4: Authentication and Database Features
 

@@ -4,15 +4,17 @@ import { Button } from "../components/Button";
 import { EmptyState } from "../components/common/EmptyState";
 import { ErrorState } from "../components/common/ErrorState";
 import { LoadingState } from "../components/common/LoadingState";
+import { StatusBanner } from "../components/common/StatusBanner";
 import { PlaylistCard } from "../components/PlaylistCard";
 import { useMoodTheme } from "../hooks/useMoodTheme";
 import { usePlaylistMock } from "../hooks/usePlaylistMock";
 import type { Mood } from "../types/mood";
-import type { Playlist } from "../types/playlist";
+import type { Playlist, PlaylistGenerationResponse } from "../types/playlist";
 
 type ResultsLocationState = {
   mood?: Mood;
   playlists?: Playlist[];
+  playlistResponse?: PlaylistGenerationResponse;
 };
 
 export function ResultsPage() {
@@ -20,7 +22,18 @@ export function ResultsPage() {
   const location = useLocation();
   const routeState = location.state as ResultsLocationState | null;
   const { selectedMood, setSelectedMood, theme } = useMoodTheme();
-  const { playlists, setPlaylists, isLoading, error, generate } = usePlaylistMock();
+  const {
+    playlists,
+    setPlaylists,
+    isLoading,
+    error,
+    statusMessage,
+    setStatusMessage,
+    lastResponse,
+    setLastResponse,
+    generate,
+    regenerate
+  } = usePlaylistMock();
   const activeMood = routeState?.mood ?? selectedMood;
 
   useEffect(() => {
@@ -31,7 +44,12 @@ export function ResultsPage() {
     if (routeState?.playlists?.length) {
       setPlaylists(routeState.playlists);
     }
-  }, [routeState?.mood, routeState?.playlists, setPlaylists, setSelectedMood]);
+
+    if (routeState?.playlistResponse) {
+      setLastResponse(routeState.playlistResponse);
+      setStatusMessage(routeState.playlistResponse.meta?.message ?? null);
+    }
+  }, [routeState?.mood, routeState?.playlistResponse, routeState?.playlists, setLastResponse, setPlaylists, setSelectedMood, setStatusMessage]);
 
   useEffect(() => {
     if (!routeState?.playlists?.length && activeMood && playlists.length === 0 && !isLoading) {
@@ -41,7 +59,7 @@ export function ResultsPage() {
 
   const handleRegenerate = async () => {
     if (activeMood) {
-      await generate(activeMood);
+      await regenerate(activeMood);
     }
   };
 
@@ -49,7 +67,7 @@ export function ResultsPage() {
     return (
       <EmptyState
         title="Choose a mood first"
-        message="Playlist results need a selected mood. Head back home, pick the feeling that fits, and generate your mock recommendations."
+        message="Playlist results need a selected mood. Head back home, pick the feeling that fits, and generate your recommendations."
         action={<Button onClick={() => navigate("/")}>Back to Home</Button>}
       />
     );
@@ -61,13 +79,14 @@ export function ResultsPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-normal" style={{ color: theme.accent }}>
-              Mock playlist results
+              Playlist results
             </p>
             <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
               {activeMood.emoji} {activeMood.name} recommendations
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              These cards use local mock data for Phase 2. Spotify and YouTube calls will be routed through the backend in a later phase.
+              Query: <span className="font-semibold text-slate-950">{lastResponse?.query ?? "selecting..."}</span>
+              {lastResponse?.meta?.cached ? " · Cached response" : ""}
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -81,12 +100,13 @@ export function ResultsPage() {
         </div>
       </div>
 
+      {statusMessage ? <StatusBanner message={statusMessage} /> : null}
       {error ? <ErrorState message={error} onRetry={handleRegenerate} /> : null}
       {isLoading ? <LoadingState /> : null}
       {!isLoading && playlists.length === 0 ? (
         <EmptyState
           title="No playlists yet"
-          message="Use Regenerate to create mock playlists for the selected mood."
+          message="Use Regenerate to create playlists for the selected mood."
           action={<Button onClick={handleRegenerate}>Generate now</Button>}
         />
       ) : null}

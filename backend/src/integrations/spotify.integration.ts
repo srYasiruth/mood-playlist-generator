@@ -1,4 +1,7 @@
-export function spotifyIntegrationPlaceholder() {
-  return null;
-}
-
+﻿export {
+  getAccessToken,
+  normalizeSpotifyPlaylist,
+  searchPlaylists,
+  SpotifyApiError,
+  SpotifyConfigurationError
+} from "./spotify.service";

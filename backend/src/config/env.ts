@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+﻿import dotenv from "dotenv";
 import { z } from "zod";
 
 dotenv.config();
@@ -6,13 +6,18 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.coerce.number().default(5000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().min(1).default("postgresql://username:password@localhost:5432/mood_playlist_generator"),
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .default("postgresql://username:password@localhost:5432/mood_playlist_generator"),
   JWT_SECRET: z.string().min(1).default("replace_with_strong_secret"),
   JWT_EXPIRES_IN: z.string().default("7d"),
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
   SPOTIFY_CLIENT_ID: z.string().default(""),
   SPOTIFY_CLIENT_SECRET: z.string().default(""),
-  YOUTUBE_API_KEY: z.string().default("")
+  YOUTUBE_API_KEY: z.string().default(""),
+  PLAYLIST_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+  PLAYLIST_DEFAULT_LIMIT: z.coerce.number().int().min(1).max(20).default(8)
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -23,3 +28,6 @@ if (!parsedEnv.success) {
 
 export const env = parsedEnv.data;
 
+export function hasSpotifyCredentials() {
+  return Boolean(env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET);
+}
